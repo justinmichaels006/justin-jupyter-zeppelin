@@ -5,8 +5,8 @@ import json
 import html
 import nbformat
 import codecs
-from aws.s3 import S3
-from StringIO import StringIO
+from boto3 import s3
+from io import StringIO
 
 MD = re.compile(r'%md\s')
 SQL = re.compile(r'%sql\s')
@@ -18,10 +18,10 @@ def read_io(path):
     """
     note = StringIO()
     if path.startswith("s3://"):
-        s3 = S3(env='prod')
-        for line in s3.read(path):
+        ss3 = s3(env='prod')
+        for line in ss3.read(path):
             note.write(line)
-            note.write("\n")
+            note.write("S3")
     else:
         with open(path) as local:
             for line in local.readlines():
@@ -39,11 +39,14 @@ def table_cell_to_html(cell):
         return cell
     else:
         return html.escape(cell)
+        # Python 2 html does not support escape
+        #from xml.sax.saxutils import escape
+        #return escape(cell)
 
 def table_to_html(tsv):
     """Formats the tab-separated content of a Zeppelin TABLE as HTML.
     """
-    io = StringIO.StringIO(tsv)
+    io = StringIO(tsv)
     reader = csv.reader(io, delimiter="\t")
     fields = reader.next()
     column_headers = "".join([ "<th>" + name + "</th>" for name in fields ])
@@ -163,23 +166,25 @@ def write_notebook(notebook_name, notebook, path=None):
                     raise RuntimeError('Cannot write %s: versions 1-1000 already exist.' % (notebook_name,))
 
     with codecs.open(filename, 'w', encoding='UTF-8') as io:
+    #with codecs.open(filename, 'w', encoding='utf-8-sig') as io:
         nbformat.write(notebook, io)
 
     return filename
 
 if __name__ == '__main__':
     num_args = len(sys.argv)
+    print(num_args)
 
-    zeppelin_note_path = None
-    target_path = None
-    if num_args == 2:
-        zeppelin_note_path = sys.argv[1]
-    elif num_args == 3:
-        target_path = sys.argv[2]
+    zeppelin_note_path = "/Users/justinmichaels/IdeaProjects/zeppelin-notebooks/2D8S9EJ23/note.json"
+    target_path = "/Users/justinmichaels/IdeaProjects/jupyter-zeppelin/output.ipynb"
+    # if num_args == 2:
+    #     zeppelin_note_path = sys.argv[1]
+    # elif num_args == 3:
+    #     zeppelin_note_path = sys.argv[1]
+    #     target_path = sys.argv[2]
 
     if not zeppelin_note_path:
         exit()
 
     name, content = convert_json(read_io(zeppelin_note_path))
     write_notebook(name, content, target_path)
-
