@@ -175,13 +175,13 @@ if __name__ == '__main__':
     num_args = len(sys.argv)
     print(num_args)
 
-    zeppelin_note_path = "/Users/justinmichaels/IdeaProjects/zeppelin-notebooks/2D8S9EJ23/note.json"
-    target_path = "/Users/justinmichaels/IdeaProjects/jupyter-zeppelin/output.ipynb"
-    # if num_args == 2:
-    #     zeppelin_note_path = sys.argv[1]
-    # elif num_args == 3:
-    #     zeppelin_note_path = sys.argv[1]
-    #     target_path = sys.argv[2]
+    zeppelin_note_path = None
+    target_path = None
+    if num_args == 2:
+        zeppelin_note_path = sys.argv[1]
+    elif num_args == 3:
+        zeppelin_note_path = sys.argv[1]
+        target_path = sys.argv[2]
 
     if not zeppelin_note_path:
         exit()
