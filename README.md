@@ -1,8 +1,8 @@
 ## Zeppelin Notebook Conversion
 
 Simple conversion utility for converting Zeppelin notebooks to Jupyter's ipynb format. Depending on the format of the notebook the parsing may need an alternative parsing format. There are two modes this utility can run:
-<br> 1 Based from https://github.com/rdblue/jupyter-zeppelin repo and provides python based notebooks.
-<br> 2 Many notebooks do not parse correctly and a more crude approach might be needed. This mode parses the notebook text directly.
+<br> 1. Based from https://github.com/rdblue/jupyter-zeppelin repo and provides python based notebooks.
+<br> 2. Many notebooks do not parse correctly and a more crude approach might be needed. This mode parses the notebook text directly.
 
 To convert a notebook, run:
 
