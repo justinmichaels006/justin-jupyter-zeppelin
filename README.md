@@ -1,20 +1,18 @@
-## Jupyter/Zeppelin conversion
+## Zeppelin Notebook Conversion
 
-This repo has code for converting Zeppelin notebooks to Jupyter's ipynb format.
+Simple conversion utility for converting Zeppelin notebooks to Jupyter's ipynb format. Depending on the format of the notebook the parsing may need an alternative parsing format. There are two modes this utility can run:
+<br> 1 Based from https://github.com/rdblue/jupyter-zeppelin repo and provides python based notebooks.
+<br> 2 Many notebooks do not parse correctly and a more crude approach might be needed. This mode parses the notebook text directly.
 
 To convert a notebook, run:
 
 ```
-python jupyter-zeppelin.py note.json
+usage: python3 jupyter-zeppelin.py <1 or 2> <path to Zeppelin notebook file> <path to target output file>
 ```
 
-This will create a file named using the Zeppelin note's name in the current directory. Alternatively, you can pass an output path:
+This will create a file based on the name and directory passed.
 
-```
-python jupyter-zeppelin.py note.json Example.ipynb
-```
-
-### Supported conventions
+### Supported Conventions
 
 This converter supports the following Zeppelin conventions:
 
