@@ -1,12 +1,14 @@
+import csv
 import os, sys
 import re
-import csv
 import json
 import html
 import nbformat
 import codecs
 from boto3 import s3
 from io import StringIO
+from pyspark.sql import SparkSession
+from setuptools._vendor.pyparsing import col
 
 MD = re.compile(r'%md\s')
 SQL = re.compile(r'%sql\s')
@@ -166,25 +168,76 @@ def write_notebook(notebook_name, notebook, path=None):
                     raise RuntimeError('Cannot write %s: versions 1-1000 already exist.' % (notebook_name,))
 
     with codecs.open(filename, 'w', encoding='UTF-8') as io:
-    #with codecs.open(filename, 'w', encoding='utf-8-sig') as io:
         nbformat.write(notebook, io)
 
     return filename
 
+def zeppelinToDB(zepJSON):
+    import json
+    from datetime import datetime
+
+    #parse JSON from file and separate into individual paragraphs
+    json_data=open(zepJSON).read().encode('ascii', 'ignore').decode('ascii')
+    data = json.loads(json_data)
+    paragraphs = data["paragraphs"]
+
+    #identify interpreter type
+    commentType = "// "
+    extType = ".scala"
+    for paragraph in paragraphs:
+        if "text" in paragraph:
+            if "pyspark" in paragraph["text"]:
+                commentType = "# "
+                extType = ".py"
+                break
+
+    #convert each paragraph into equivalent Databricks cell type
+    tmstr = datetime.now().strftime("%c")
+    script = commentType+"Databricks notebook source exported at " + tmstr + "\n"
+    for paragraph in paragraphs:
+        if not "text" in paragraph: continue
+        text = paragraph.get("text")
+        if  "%pyspark" in text:
+            script += commentType + " COMMAND ----------\n" + text.replace("%pyspark", commentType) + "\n" + commentType + " COMMAND ----------\n"
+        elif  "%sh" in text:
+            script += commentType + " COMMAND ----------\n" + commentType + " MAGIC " + text + "\n" + commentType + " COMMAND ----------\n"
+        elif  "%sql" in text:
+            script += commentType + " COMMAND ----------\n" + commentType + " MAGIC " + text + "\n" + commentType + " COMMAND ----------\n"
+        elif  "%" in text:
+            lines = text.split("\n")
+            for line in lines:
+                script += commentType + " MAGIC " + line + "\n"
+        else:
+            script += "\n" + commentType + " COMMAND ----------\n" + text + "\n" + commentType + " COMMAND ----------\n"
+    filename = "outfile" + extType
+
+    return (filename, script)
+
 if __name__ == '__main__':
+    spark = SparkSession \
+        .builder \
+        .appName("ZeppelinConvert") \
+        .getOrCreate()
+
     num_args = len(sys.argv)
-    print(num_args)
+    print(sys.argv[1])
+    print(sys.argv[2])
+    print(sys.argv[3])
 
-    zeppelin_note_path = None
-    target_path = None
-    if num_args == 2:
-        zeppelin_note_path = sys.argv[1]
-    elif num_args == 3:
-        zeppelin_note_path = sys.argv[1]
-        target_path = sys.argv[2]
-
-    if not zeppelin_note_path:
+    #zeppelin_note_path = "/Users/justinmichaels/IdeaProjects/zeppelin-notebooks/2AS5TY6AQ/note.json"
+    #target_path = open("/Users/justinmichaels/IdeaProjects/jupyter-zeppelin/scalaConvert.scala", 'w')
+    if sys.argv[1] == "one":
+         zeppelin_note_path = sys.argv[2]
+         target_path = open(sys.argv[3], 'w')
+         name, content = convert_json(read_io(zeppelin_note_path))
+         name, content = zeppelinToDB(zeppelin_note_path)
+         write_notebook(name, content, target_path)
+    elif sys.argv[1] == "two":
+         zeppelin_note_path = sys.argv[2]
+         target_path = open(sys.argv[3], 'w')
+         databricks = zeppelinToDB(zeppelin_note_path)
+         target_path.write("".join(databricks))
+         target_path.close()
+    else:
+        print("usage: python3 jupyter-zeppelin.py <1 or 2> <path to Zeppelin notebook file> <path to target output file>")
         exit()
-
-    name, content = convert_json(read_io(zeppelin_note_path))
-    write_notebook(name, content, target_path)
